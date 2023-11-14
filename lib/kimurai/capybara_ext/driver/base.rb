@@ -49,7 +49,7 @@ class Capybara::Driver::Base
 
           sum
         end
-      rescue Errno::EACCES
+      rescue Errno::EACCES, Errno::ESRCH
         0
       end
     when "darwin"
