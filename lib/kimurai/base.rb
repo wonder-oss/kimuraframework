@@ -286,22 +286,23 @@ module Kimurai
       end
     end
 
-    def in_parallel(handler, urls, threads:, data: {}, delay: nil, engine: @engine, config: {})
+    def in_parallel(handler, urls, threads:, data: {}, delay: nil, engine: @engine, config: { stop_threads_on_error: false })
       parts = urls.in_sorted_groups(threads, false)
       urls_count = urls.size
 
       all = []
       start_time = Time.now
+      stop_threads = false # Control variable to stop threads in case of error.
       logger.info "Spider: in_parallel: starting processing #{urls_count} urls within #{threads} threads"
 
       parts.each do |part|
         all << Thread.new(part) do |part|
-          Thread.current.abort_on_exception = true
-
           spider = self.class.new(engine, config: @config.deep_merge_excl(config, DMERGE_EXCLUDE))
           spider.with_info = true if self.with_info
 
           part.each do |url_data|
+            Thread.exit if stop_threads
+
             if url_data.class == Hash
               if url_data[:url].present? && url_data[:data].present?
                 spider.request_to(handler, delay, url_data)
@@ -311,9 +312,14 @@ module Kimurai
             else
               spider.request_to(handler, delay, url: url_data, data: data)
             end
+          rescue => e
+            if config[:stop_threads_on_error]
+              logger.error "Stopping threads on error...\n#{e.inspect} #{[e.message, *e.backtrace].join("\n")}"
+              stop_threads = true
+            end
+            
+            raise e
           end
-        rescue => e
-          logger.error "in_parallel: #{e.inspect} #{[e.message, *e.backtrace].join("\n")}"
         ensure
           spider.browser.destroy_driver! if spider.instance_variable_get("@browser")
         end
