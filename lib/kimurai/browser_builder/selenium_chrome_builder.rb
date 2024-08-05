@@ -112,6 +112,9 @@ module Kimurai::BrowserBuilder
         chromedriver_path = Kimurai.configuration.chromedriver_path || "/usr/local/bin/chromedriver"
         Selenium::WebDriver::Chrome::Service.driver_path = chromedriver_path
 
+        # Permite que erros de certificação sejam ignorados. Caso NFCe SEFAZ
+        driver_options.args << "--ignore-certificate-errors"
+        
         Capybara::Selenium::Driver.new(app, browser: :chrome, options: driver_options)        
       end
 
