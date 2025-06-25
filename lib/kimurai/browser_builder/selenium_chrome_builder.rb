@@ -29,6 +29,9 @@ module Kimurai::BrowserBuilder
           opts.merge!(binary: chrome_path)
         end
 
+        # Provide custom chrome browser remote execution:
+        remote_url = Kimurai.configuration.remote_url
+
         # See all options here: https://seleniumhq.github.io/selenium/docs/api/rb/Selenium/WebDriver/Chrome/Options.html
         driver_options = Selenium::WebDriver::Chrome::Options.new(profile: nil, **opts)
 
@@ -115,7 +118,11 @@ module Kimurai::BrowserBuilder
         # Permite que erros de certificação sejam ignorados. Caso NFCe SEFAZ
         driver_options.args << "--ignore-certificate-errors"
         
-        Capybara::Selenium::Driver.new(app, browser: :chrome, options: driver_options)        
+        if remote_url
+          Capybara::Selenium::Driver.new(app, browser: :remote, url: remote_url, options: driver_options)  
+        else
+          Capybara::Selenium::Driver.new(app, browser: :chrome, options: driver_options)
+        end      
       end
 
       # Create browser instance (Capybara session)
