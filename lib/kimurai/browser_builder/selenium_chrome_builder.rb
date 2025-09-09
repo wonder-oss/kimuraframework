@@ -35,6 +35,16 @@ module Kimurai::BrowserBuilder
         # See all options here: https://seleniumhq.github.io/selenium/docs/api/rb/Selenium/WebDriver/Chrome/Options.html
         driver_options = Selenium::WebDriver::Chrome::Options.new(profile: nil, **opts)
 
+        if timeouts = @config[:timeouts].presence
+          configs_timeout = {}  
+
+          configs_timeout = configs_timeout.merge(timeouts.slice(:implicit)) if timeouts[:implicit] # tempo máximo para encontrar elementos
+          configs_timeout = configs_timeout.merge(timeouts.slice(:pageLoad)) if timeouts[:pageLoad] # tempo máximo para carregar uma página
+          configs_timeout = configs_timeout.merge(timeouts.slice(:script))   if timeouts[:script]   # tempo máximo para execução de scripts JavaScript
+
+          driver_options.add_option(:timeouts, configs_timeout)
+        end
+
         # Window size
         if size = @config[:window_size].presence
           driver_options.args << "--window-size=#{size.join(',')}"
